@@ -143,7 +143,6 @@
 
 		function getProductDetails(): void
 		{
-			// Make a first API call to get the first page of scripts.
 			global $token, $output, $products, $productIdentifiers;
 
 			$parameters = http_build_query(["ids" => $productIdentifiers]);
@@ -156,24 +155,43 @@
 
 			$productDetails = json_decode($productDetails, true);
 
-			if (empty($productDetails["data"]))
-			{
+			foreach ($productDetails["data"] as $product) {
+				// Debugging output
+				$output .= "<pre>" . print_r($product, true) . "</pre>";
+			}
+			
+
+			if (empty($productDetails["data"])) {
 				$output .= $productDetails["message"] . "<br />" . PHP_EOL;
-			}
-			else
-			{
-				$products = array_merge($products, $productDetails["data"]);
+			} else {
+				foreach ($productDetails["data"] as $product) {
+					// Safely handle optional fields
+					$thumbnail = $product["images"]["listingSmall"] ?? 'https://via.placeholder.com/460x130?text=No+Image';
+					$priceData = $product["price"]["original"] ?? null;
+					$priceAmount = $priceData["amount"] ?? "0";
+					$priceCurrency = $priceData["currency"] ?? "USD";
+
+					$products[] = [
+						"id" => $product["id"],
+						"name" => $product["name"] ?? "Unnamed Product",
+						"shortDescription" => $product["shortDescription"] ?? "No description available.",
+						"price" => [
+							"amount" => intval($priceAmount),
+							"currency" => $priceCurrency,
+							"formatted" => $priceData["formatted"] ?? "Free",
+						],
+						"thumbnail" => $thumbnail,
+					];
+				}
 			}
 
-			// Checking all identifiers fetched previously.
-			// The API only allows 100 identifiers per request.
-			if (count($productIdentifiers) > 100)
-			{
+			// Handle pagination (if there are more than 100 identifiers)
+			if (count($productIdentifiers) > 100) {
 				$productIdentifiers = array_slice($productIdentifiers, 100);
-
 				getProductDetails();
 			}
 		}
+
 
 		getProductDetails();
 
@@ -181,111 +199,146 @@
 		$total = 0;
 		$addons = "";
 
-		foreach ($products as $product)
-		{
-			// Building the HTML structure.
-			$addons .= '
-				<li>
-					<b>' . $product["name"] . '</b>
-					<br />
-					<a href="?token=' . $token . '&download=' . $product["id"] . '">Download</a>
-					—
-					<a href="https://www.gmodstore.com/market/view/' . $product["id"] . '" target="_blank">Store</a>
-				</li>'
-			;
+		foreach ($products as $product) {
+			// Safely retrieve price details
+			$price = $product["price"];
+			$priceAmount = $price["amount"] ?? 0;
+			$priceCurrency = $price["currency"] ?? "USD";
 
-			// Calculating the price of all addons.
-			$currency = $product["price"]["original"]["currency"];
-
-			if ($product["price"]["raw"] !== 99999)
-			{
-				$total += intval($product["price"]["original"]["amount"]);
+			// Add to total price
+			if ($priceAmount !== 99999) { // Assuming 99999 represents a free product
+				$total += $priceAmount;
 			}
+
+			// Build the HTML structure
+			$addons .= '
+				<li class="bg-white rounded-lg shadow-lg p-4">
+					<img src="' . htmlspecialchars($product["thumbnail"], ENT_QUOTES) . '" alt="' . htmlspecialchars($product["name"], ENT_QUOTES) . '" class="w-full h-40 object-cover rounded-md mb-4" />
+					<h3 class="text-lg font-semibold mb-2">' . htmlspecialchars($product["name"], ENT_QUOTES) . '</h3>
+					<p class="text-gray-600 text-sm mb-4">' . htmlspecialchars($product["shortDescription"], ENT_QUOTES) . '</p>
+					<div class="flex space-x-4">
+						<a href="?token=' . $token . '&download=' . $product["id"] . '" class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600">Download</a>
+						<a href="https://www.gmodstore.com/market/view/' . $product["id"] . '" target="_blank" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg shadow-md hover:bg-gray-300">View in Store</a>
+					</div>
+				</li>';
 		}
 
-		// Displaying the total money spent.
-		$money = number_format($total / 100, 2, ",", " ") . " " . $currency;
+		// Format the total money spent
+		$money = number_format($total / 100, 2, ",", " ") . " " . htmlspecialchars($priceCurrency, ENT_QUOTES);
+
 	}
 ?>
 
+
+
 <!DOCTYPE html>
-
 <html lang="en">
-	<head>
-		<!-- Document metadata -->
-		<meta charset="utf-8" />
-		<meta name="author" content="Florian Trayon" />
-		<meta name="description" content="A simple web page to download addons through the GmodStore API." />
-		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content="A simple web page to download addons through the GmodStore API." />
+        <title>GmodStore Downloader</title>
 
-		<!-- Document title -->
-		<title>GmodStore Downloader</title>
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
 
-		<!-- Document icons -->
-		<link rel="icon" type="image/webp" sizes="16x16" href="assets/favicons/16x16.webp" />
-		<link rel="icon" type="image/webp" sizes="32x32" href="assets/favicons/32x32.webp" />
-		<link rel="icon" type="image/webp" sizes="48x48" href="assets/favicons/48x48.webp" />
-		<link rel="icon" type="image/webp" sizes="192x192" href="assets/favicons/192x192.webp" />
-		<link rel="icon" type="image/webp" sizes="512x512" href="assets/favicons/512x512.webp" />
-		<link rel="apple-touch-icon" href="assets/favicons/180x180.webp" />
+        <!-- Favicon -->
+        <link rel="icon" type="image/webp" href="assets/favicons/48x48.webp" />
+    </head>
+    <body class="bg-gray-100 text-gray-800 font-sans">
+        
 
-		<!-- CSS stylesheet -->
-		<link rel="stylesheet" href="styles/styles.css" />
-	</head>
-	<body>
-		<!-- Animated GitHub repository icon -->
-		<!-- Source: https://tholman.com/github-corners/ -->
-		<a href="https://github.com/FlorianLeChat/GmodStore-Downloader" title="GitHub" target="_blank" aria-label="GitHub">
-			<svg width="80" height="80" viewBox="0 0 250 250">
-				<path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-				<path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;"></path>
-				<path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor"></path>
-			</svg>
-		</a>
+        <!-- Main Content -->
+        <div class="container mx-auto p-6">
+            <!-- Title -->
+            <h1 class="text-3xl font-bold text-center mb-8">
+                <a href="https://github.com/FlorianLeChat/GmodStore-Downloader" target="_blank" class="text-blue-500 hover:underline">📥 GmodStore Downloader</a>
+            </h1>
 
-		<!-- Title -->
-		<h1><a href="https://github.com/FlorianLeChat/GmodStore-Downloader" target="_blank">📥</a> GmodStore Downloader</h1>
+			<!-- Account Details -->
+			<?php if (!empty($account)): ?>
+				<div class="mb-6">
+					<h2 class="text-xl text-gray-700">
+						🔐 Logged in as:
+						<span class="relative group">
+							<a 
+								href="https://www.gmodstore.com/users/<?= urlencode($userData['name']) ?>" 
+								target="_blank" 
+								class="capitalize text-blue-500 hover:underline">
+								<?= htmlspecialchars($userData['name'], ENT_QUOTES) ?>
+							</a>
+						</span>
+					</h2>
+				</div>
+			<?php endif; ?>
 
-		<!-- Account details -->
-		<?php if (!empty($account)):  ?>
-			<h2>🔐 <?= $account ?></h2>
-		<?php endif; ?>
 
-		<?php if (!empty($addons)):  ?>
-			<!-- Addons list -->
-			<ul>
-				<?= $addons ?>
-			</ul>
 
-			<!-- Money spent -->
-			<h3>💰 <?= $money ?></h3>
-		<?php else: ?>
-			<!-- Authentication form -->
-			<p>
-				A token can be generated at the following address (<strong>account login required</strong>):
-				<a href="https://www.gmodstore.com/settings/personal-access-tokens" target="_blank">https://www.gmodstore.com/settings/personal-access-tokens</a><br />
+            <?php if (!empty($addons)): ?>
+				<!-- Addons List -->
+				<ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					<?php foreach ($products as $product): ?>
+						<li class="bg-white rounded-lg shadow-lg p-4">
+							<!-- Product Thumbnail -->
+							<div class="relative w-full h-40">
+							<img 
+								src="<?= $product['thumbnail'] ?>" 
+								alt="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>" 
+								class="w-full h-full object-contain rounded-md"
+							/>
+							</div>
+							<!-- Product Name -->
+							<h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($product['name'], ENT_QUOTES) ?></h3>
 
-				The permissions to be granted when creating the token are:
-				<code>products:read</code>, <code>product-versions:read</code>, <code>product-versions:download</code>, <code>users:read</code> et <code>user-purchases:read</code>.<br />
+							<!-- Links -->
+							<div class="flex space-x-4">
+								<a 
+									href="?token=<?= $token ?>&download=<?= $product['id'] ?>" 
+									class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600">
+									Download
+								</a>
+								<a 
+									href="https://www.gmodstore.com/market/view/<?= $product['id'] ?>" 
+									target="_blank" 
+									class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg shadow-md hover:bg-gray-300">
+									View in Store
+								</a>
+							</div>
+						</li>
+					<?php endforeach; ?>
+				</ul>
 
-				Please note that the token will be displayed only once when it is created, so remember to save it somewhere safe!<br />
 
-				Once retrieved, simply paste it into the field below. <strong>Do not share it with others unless you know what you are doing</strong>.
-			</p>
+                <!-- Money Spent -->
+                <h3 class="text-lg font-bold mt-8">💰 Total Spent: <?= $money ?></h3>
+            <?php else: ?>
+               <!-- Authentication Form -->
+				<div class="bg-white rounded-lg shadow-lg p-6">
+					<p class="mb-4">
+						A token can be generated at the following address (<strong>account login required</strong>):
+						<a href="https://www.gmodstore.com/settings/personal-access-tokens" target="_blank" class="text-blue-500 hover:underline">Personal Access Tokens</a>
+					</p>
+					<p class="mb-4">
+						Ensure the token includes the following permissions:
+					</p>
+					<ul class="list-disc list-inside bg-gray-100 p-4 rounded-md mb-4">
+						<li><code class="bg-gray-200 text-gray-800 px-1 rounded">products:read</code></li>
+						<li><code class="bg-gray-200 text-gray-800 px-1 rounded">product-versions:read</code></li>
+						<li><code class="bg-gray-200 text-gray-800 px-1 rounded">product-versions:download</code></li>
+						<li><code class="bg-gray-200 text-gray-800 px-1 rounded">users:read</code></li>
+						<li><code class="bg-gray-200 text-gray-800 px-1 rounded">user-purchases:read</code></li>
+					</ul>
+					<form method="GET" class="space-y-4">
+						<label for="token" class="block text-gray-700">Account authentication token:</label>
+						<input type="text" id="token" name="token" required class="w-full border rounded-lg p-2">
+						<button type="submit" class="w-full bg-blue-500 text-white rounded-lg py-2 hover:bg-blue-600">
+							Connect
+						</button>
+					</form>
+				</div>
 
-			<form method="GET">
-				<label for="token">Account authentication token :</label>
-				<input type="text" autoComplete="off" spellCheck="false" id="token" name="token" required />
+            <?php endif; ?>
 
-				<input type="submit" value="Connect" />
-			</form>
-		<?php endif; ?>
-
-		<!-- Error output -->
-		<?php if (!empty($output)):  ?>
-			<h3>⚠️ Error output ⚠️</h3>
-
-			<output><?= $output ?></output>
-		<?php endif; ?>
-	</body>
+        </div>
+    </body>
 </html>
