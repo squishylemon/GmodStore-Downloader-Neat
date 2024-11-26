@@ -2,6 +2,9 @@
 
 ## In French
 
+### Neatened Changes
+Ce fork du Gmodstore Downloader présente une interface utilisateur simplifiée, avec des vignettes pour chaque module complémentaire. Il offre une expérience améliorée aussi bien aux développeurs recherchant des modules complémentaires spécifiques qu'aux débutants, avec une présentation plus claire et plus intuitive des autorisations requises pour une lecture facile.
+
 ### Introduction
 
 Ce petit site Internet permet le téléchargement d'addons en provenance du [GmodStore](https://www.gmodstore.com/) sans passer le site en ligne mais grâce à son [API](https://docs.pivity.com/). Cela est très utile dans le cas où un propriétaire d'un compte souhaite donner la possibilité à des personnes tierces de télécharger ses addons créés/achetés sans leur donner des identifiants de connexion, c'est un moyen équivalent aux solutions des « **accès secondaires** ». Le propriétaire du compte doit seulement générer un jeton d'authentification avec certaines permissions restreintes afin de le donner aux personnes autorisées.
@@ -26,6 +29,9 @@ Les jetons peuvent être générés à cette adresse : https://www.gmodstore.com
 
 ## In English
 
+### Neatened Changes
+This fork of the Gmodstore Downloader features a streamlined user interface, complete with thumbnails for each addon. It offers an improved experience for both developers seeking specific addons and beginners, with a clearer and more intuitive layout of required permissions for easy reading.
+
 ### Introduction
 
 This simple website provides the possibility to download addons from the [GmodStore](https://www.gmodstore.com/) without going through the online website but using its [API](https://docs.pivity.com/). This is very useful in case an account owner wants to give the access to third parties to download his created/purchased addons without giving them login credentials, it is a equivalent to the "**secondary access**" way. The account owner only needs to generate an authentication token with some restricted permissions in order to give it to authorized persons.
@@ -48,4 +54,5 @@ Tokens can be generated at this address: https://www.gmodstore.com/settings/pers
 
 *This website is in no way affiliated with GmodStore, except that I use their amazing API to provide you this service.*
 
-![image](https://user-images.githubusercontent.com/26360935/190854337-559ea766-dc34-4b49-b9bb-f3f69399f92d.png)
+![image](https://i.ibb.co/StD52yv/Screenshot-2024-11-26-152647.png)
+![image](https://i.ibb.co/vjsg8dv/Screenshot-2024-11-26-152532.png)
